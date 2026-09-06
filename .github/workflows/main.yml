@@ -2,31 +2,43 @@ name: run main.py
 
 on:
   schedule:
-    - cron: '0 */2 * * *' # Runs in every 3 hours
+    - cron: '0 */3 * * *' # Her 3 saatte bir çalışır
   pull_request:
-      branches:
-        - main
+    branches:
+      - main
+  workflow_dispatch: # İstediğiniz zaman elle tetikleyebilmeniz için
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Git push yapabilmesi için yazma izni
     steps: 
       - uses: actions/checkout@v4
+      
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-            python-version: '3.x' 
+          python-version: '3.x' 
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          
-          pip3 install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
       - name: execute py script 
         run: python main.py config.json
+
       - name: commit and push files
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add -A
-          git commit -m "updated streams"
-          git push
+          
+          # Değişiklik olup olmadığını kontrol et
+          if git diff-index --quiet HEAD --; then
+            echo "Değişiklik yok, commit atlanıyor."
+          else
+            git commit -m "updated streams"
+            git push
+          fi
